@@ -1,0 +1,6 @@
+all.h: 
+  directory: include/
+  suffix: ['h']
+all.cpp:
+  directory: src/
+  suffix: ['cpp']

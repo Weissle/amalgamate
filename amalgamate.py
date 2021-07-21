@@ -1,5 +1,32 @@
 import os
 import sys
+import yaml
+
+def GetFilesList(yaml_path):
+    cfg_f = open(yaml_path,'r')
+    cfg = yaml.load(cfg_f.read())
+
+    cwd = os.getcwd()
+    print(cfg)
+    # key is output file name , value is the array of the amalgamated files.
+    ret = dict()
+    for key,value in cfg.items():
+        # Only the suffix of files name in suffix will be considered.
+        ret[key] = []
+
+        suffix = []
+        if 'suffix' in value:
+            suffix = value['suffix']
+
+        for root,_,files in os.walk(os.path.join(cwd,value['directory'])):
+            for f in files:
+                for suf in suffix:
+                    if f.endswith(suf):
+                        ret[key].append(os.path.join(root,f))
+    print(ret)
+    return ret
+
+
 
 class CFile:
     def __init__(self,file_path,files_name):
@@ -76,6 +103,9 @@ def get_handle_sequence(files:dict):
 
 
 if __name__ == '__main__':
+    yaml_path = sys.argv[1]
+    GetFilesList(yaml_path)
+    exit(0)
     input_file = sys.argv[1]
     output_file = sys.argv[2]
     files_name = []
