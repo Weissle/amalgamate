@@ -6,9 +6,6 @@ combine multi-cpp fils into one ;
 合成的文件中若有重复的名字则无法获得正确的输出，即使他们不再同一个路径下。  
 The output is incorrect if some files have the same name, even if they are under different directories.
 
-目前无法对声明实现分离(.h + .c/.cpp)进行合并。  
-For now, it can only amalgamate the files whose functions' definition and implementation in the same file.
-
 不允许互相依赖(相互`#include`)  
 If existing files `#include` each other, the program will exit and no output.
 

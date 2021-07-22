@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+from pathlib import Path
 
 def GetFilesList(yaml_path):
     cfg_f = open(yaml_path,'r')
@@ -29,12 +30,13 @@ def GetFilesList(yaml_path):
 
 
 class CFile:
-    def __init__(self,file_path,files_name):
+    def __init__(self,file_path,output_filename,input_output):
         self.file_path = file_path
-        self.file_name = file_path[file_path.rfind('/')+1:]
+        self.file_name = Path(file_path).name
         self.file_handle = open(file_path,'r')
-        self.get_dependencies(files_name)
-    def get_include_file_path(self,l):
+        self.output_filename = output_filename
+        self.get_dependencies(input_output)
+    def get_include_file_name(self,l):
         ret = None
         if '<' in l:
             ret = l[l.find('<')+1:l.find('>')]
@@ -48,25 +50,42 @@ class CFile:
             ret = ret[ret.rfind('/')+1:]
         return ret
         
-    def get_dependencies(self,files_name):
-        self.dependencies = []
+    def get_dependencies(self,input_output):
+        # dependencies_in is this file depend on other files which will be amalgamated into the same file.
+        # dependencies_out is this file depend on other files which will NOT be amalgamated into the same file.
+        self.dependencies_in = set()
+        self.dependencies_out = set()
         for l in self.file_handle:
             if l.startswith('#include'):
-                dep_file_name = self.get_include_file_path(l)
-                if dep_file_name in files_name:
-                    self.dependencies.append(dep_file_name)
+                dep_file_name = self.get_include_file_name(l)
+                if dep_file_name in input_output:
+                    if input_output[dep_file_name] == self.output_filename:
+                        self.dependencies_in.add(dep_file_name)
+                    else:
+                        self.dependencies_out.add(dep_file_name)
 
-    def write(self,f,files_name):
+    # f is the handle of output file ;
+    # files2output is a dictionary, from input files name to themselves' output files.
+    def write(self,f,input_output):
         self.file_handle.seek(0)
         f.write('\n/*** start of file {0} **/\n'.format(self.file_name))
         for l in self.file_handle:
-            if l.startswith('#include') and self.get_include_file_path(l) in files_name:
-                continue
-            f.write(l)
+            if l.startswith('#include'):
+                dep =  self.get_include_file_name(l)
+                if dep in self.dependencies_in :
+                    f.write('// ' + l)
+                    continue
+                elif dep in self.dependencies_out :
+                    f.write('// ' + l)
+                    f.write('#include\"{0}\"'.format(input_output[dep]))
+                else:
+                    f.write(l)
+            else:
+                f.write(l)
         f.write('\n/*** end of file {0} **/\n'.format(self.file_name))
 
 
-
+#files from file name to CFile, all of them should have the same output file name.
 def get_handle_sequence(files:dict):
     in_degree = dict()
     re_dependencies = dict()
@@ -74,13 +93,13 @@ def get_handle_sequence(files:dict):
     ret = []
     unfinished = set()
     for key, value in files.items():
-        if len(value.dependencies) == 0:
+        if len(value.dependencies_in) == 0:
             ret.append(key)
             queue.append(key)
         else:
             unfinished.add(key)
-            in_degree[key] = len(value.dependencies)
-            for tmp in value.dependencies:
+            in_degree[key] = len(value.dependencies_in)
+            for tmp in value.dependencies_in:
                 if tmp not in re_dependencies:
                     re_dependencies[tmp] = []
                 re_dependencies[tmp].append(key)
@@ -96,38 +115,42 @@ def get_handle_sequence(files:dict):
                 unfinished.remove(file_name)
                 ret.append(file_name)
 
-    if len(unfinished) > 0:
-        print('There is not allowed file include each other')
-
     return ret
 
 
 if __name__ == '__main__':
     yaml_path = sys.argv[1]
-    GetFilesList(yaml_path)
-    exit(0)
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
-    files_name = []
-    paths = []
-    for l in open(input_file,'r'):
-        l = l.strip()
-        paths.append(l)
-        if '/' in l:
-            l = l[l.rfind('/')+1:]
-        files_name.append(l)
-    
-    files = dict()
-    for path,file_name in zip(paths,files_name):
-        files[file_name] = CFile(path,set(files_name))
 
-    seq = get_handle_sequence(files)
-    if len(seq) != len(files_name):
-        exit(1)
-    f = open(output_file,'w+')
-    for tmp in seq:
-        files[tmp].write(f,set(files_name))
-    f.close()
+    #input_output is from output(str) to input(list)
+    #output_input is from input(str) to output(str) , and this only include the fils name.
+    output_input = GetFilesList(yaml_path)
+    input_output = dict()
+    for key,value in output_input.items():
+        output_filename = Path(key).name
+        for tmp in value:
+            input_filename = Path(tmp).name
+            input_output[input_filename] = output_filename
+
+    # from output file name to an object { input file name : CFile }
+    output_input_CFile = dict()
+
+    for key,value in output_input.items():
+        output_filename = Path(key).name
+        output_input_CFile[key] = dict()
+        tmp_dic = output_input_CFile[output_filename] 
+        for tmp in value:
+            input_filename = Path(tmp).name
+            tmp_dic[input_filename] = CFile(tmp,output_filename,input_output)
+    
+    for key,value in output_input_CFile.items():
+        seq = get_handle_sequence(value)
+        if len(seq) != len(value):
+            print('Not allow files dependencies to each other')
+            exit(0)
+        f = open(key,'w+')
+        for tmp in seq:
+            value[tmp].write(f,input_output)
+        f.close()
 
 
 
