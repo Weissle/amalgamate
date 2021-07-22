@@ -17,5 +17,10 @@ Get the dependency graph according to `#include ""` or `#include <>` sentences.
 We can know the handle sequence according to the dependency graph.  
 If a file `#include`other amalgamated files, the `#include` sentences will be ignored.
 
+## How To Use ##
+创建一个文件{0}包含所有需要合并的文件，要求是相对路径，假设输出文件名为{1}。  
+Create a file {0} which contains all the relative path of amalgamated files. The output file name is {1}.  
+`python3 amalgamate.py {0} {1}`
+
 
 
