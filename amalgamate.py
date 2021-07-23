@@ -5,10 +5,10 @@ from pathlib import Path
 
 def GetFilesList(yaml_path):
     cfg_f = open(yaml_path,'r')
-    cfg = yaml.load(cfg_f.read())
+    cfg = yaml.load(cfg_f.read(),Loader=yaml.FullLoader)
 
     cwd = os.getcwd()
-    print(cfg)
+    # print(cfg)
     # key is output file name , value is the array of the amalgamated files.
     ret = dict()
     for key,value in cfg.items():
@@ -24,7 +24,7 @@ def GetFilesList(yaml_path):
                 for suf in suffix:
                     if f.endswith(suf):
                         ret[key].append(os.path.join(root,f))
-    print(ret)
+    # print(ret)
     return ret
 
 
