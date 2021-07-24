@@ -18,9 +18,24 @@ We can know the handle sequence according to the dependency graph.
 If a file `#include`other amalgamated files, the `#include` sentences will be ignored.
 
 ## How To Use ##
-创建一个文件{0}包含所有需要合并的文件，要求是相对路径，假设输出文件名为{1}。  
-Create a file {0} which contains all the relative path of amalgamated files. The output file name is {1}.  
-`python3 amalgamate.py {0} {1}`
+创建一个YAML文件{0}指定需要合并的文件和输出文件名。
+比如在examples中的example1：当我们在example1文件夹下运行命令`python3 amalgamate.py amalgamate.yml`所有在include/下的.h文件都会被整合到all.h中，同理all.cpp。  
+Create a YMAL file {0} which contains the amalgamated files and output files.  
+For example, the example1 in the folder examples.
+When we run the command `python3 amalgamate.py amalgamate.yml` under the folder example1, all .h files will be amalgamated into all.h.
+Similarly to the all.cpp.
+
+`python3 amalgamate.py {0}`  
+
+```yaml
+# examples/example1/amalgamate.yml
+all.h: 
+  directory: include/
+  suffix: ['h']
+all.cpp:
+  directory: src/
+  suffix: ['cpp']
+```
 
 
 
