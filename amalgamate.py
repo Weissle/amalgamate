@@ -77,7 +77,7 @@ class CFile:
                     continue
                 elif dep in self.dependencies_out :
                     f.write('// ' + l)
-                    f.write('#include\"{0}\"'.format(input_output[dep]))
+                    f.write('#include\"{0}\"\n'.format(input_output[dep]))
                 else:
                     f.write(l)
             else:
